@@ -1,10 +1,10 @@
 import app from "./app";
-// import config from "./config";
-//import { initDB } from "./db";
+import config from "./config";
+import { initDB } from "./db";
 
-const port = 5000;
+const port = 8000;
 const main = () => {
- // initDB();
+  initDB();
   app.listen(port, () => {
     console.log(`Example app listening on port ${port}`);
   });

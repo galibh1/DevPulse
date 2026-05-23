@@ -5,7 +5,7 @@ import express, {
 } from "express";
 // import { profileRoute } from "./modules/profile/profile.route";
 // import { userRoute } from "./modules/user/user.route";
-// import { authRoute } from "./modules/auth/auth.route";
+  import { authRoute } from "./modules/auth/auth.route";
 
 const app: Application = express();
 
@@ -16,12 +16,12 @@ app.use(express.urlencoded({ extended: true }));
 app.get("/", (req: Request, res: Response) => {
   //res.send("Hello World!");
   res.status(200).json({
-    message: "Express Server",
-    author: "Next Level",
+    message: "Devpulse Server",
+    author: "Devpulse",
   });
 });
 
 // app.use("/api/users", userRoute);
 // app.use("/api/profile", profileRoute);
-// app.use("/api/auth", authRoute);
+app.use("/api/auth", authRoute);
 export default app;
