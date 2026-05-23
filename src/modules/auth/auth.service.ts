@@ -3,17 +3,33 @@ import { pool } from "./../../db/index";
 
 import jwt from "jsonwebtoken";
 import config from "../../config";
+import type { IUser } from "./auth.interface";
+
+const signupIntoDB = async (payload: IUser) => {
+  const { name, email, password, role  } = payload;
+
+  const hashPassword = await bcrypt.hash(password, 10);
+
+  const result = await pool.query(
+    `
+     INSERT INTO users(name,email,password,role) VALUES($1,$2,$3,COALESCE($4,'contributor')) RETURNING *
+    `,
+    [name, email, hashPassword, role],
+  );
+
+  delete result.rows[0].password;
+
+  return result;
+};
 
 const loginUserIntoDB = async (payload: {
   email: string;
   password: string;
 }) => {
   const { email, password } = payload;
-  // 1. Check if the user exists -> Done
-  // 2. Compare the password -> Done
-  //3. Generate Token -> Done
+ 
 
-  // 1. Check if the user exists
+
   const userData = await pool.query(
     `
     SELECT * FROM users WHERE email=$1
@@ -36,17 +52,19 @@ const loginUserIntoDB = async (payload: {
   const jwtpayload = {
     id: user.id,
     name: user.name,
-    is_active: user.is_active,
-    email: user.email,
+    role: user.role
+   
+
   };
 
   const accessToken = jwt.sign(jwtpayload, config.secret as string, {
     expiresIn: "1d",
   });
-
-  return { accessToken };
+  const data = { token: accessToken, user: user };
+  return data
 };
 
 export const authService = {
   loginUserIntoDB,
+  signupIntoDB,
 };
