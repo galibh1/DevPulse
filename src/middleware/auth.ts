@@ -1,81 +1,94 @@
-// import type { NextFunction, Request, Response } from "express";
-// import jwt, { type JwtPayload } from "jsonwebtoken";
-// import config from "../config";
-// import { pool } from "../db";
-// import type { ROLES } from "../types";
+import type { NextFunction, Request, Response } from "express";
+import jwt, { type JwtPayload } from "jsonwebtoken";
+import config from "../config";
+import { pool } from "../db";
 
-// const auth = (...roles: ROLES[]) => {
-//   return async (req: Request, res: Response, next: NextFunction) => {
-//     console.log(roles);
-//     try {
-//       // console.log("This is protected Route");
-//       // console.log(req.headers.authorization);
+declare global {
+  namespace Express {
+    interface Request {
+      user?: JwtPayload;
+    }
+  }
+}
 
-//       // 1. Check if the token exists
-//       // 2. Verify the token
-//       // 3. Find the user into database
-//       // 4. If the user active or not?
+const auth = (...roles: string[]) => {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      // 1. Check if token exists in Authorization header
+      const token = req.headers.authorization;
 
-//       const token = req.headers.authorization;
+      if (!token) {
+        res.status(401).json({
+          success: false,
+          message: "Unauthorized access! Token not provided",
+          error: null,
+        });
+        return;
+      }
 
-//       // console.log(token);
-//       if (!token) {
-//         res.status(401).json({
-//           success: false,
-//           message: "Unauthorized access!!",
-//         });
-//       }
+      // 2. Verify the token
+      const decoded = jwt.verify(
+        token as string,
+        config.secret as string
+      ) as JwtPayload;
 
-//       const decoded = jwt.verify(
-//         token as string,
-//         config.secret as string,
-//       ) as JwtPayload;
+      // 3. Find the user in database
+      const userData = await pool.query(
+        `SELECT * FROM users WHERE email = $1`,
+        [decoded.email]
+      );
 
-//       const userData = await pool.query(
-//         `
-//      SELECT * FROM users WHERE email=$1   
-//         `,
-//         [decoded.email],
-//       );
+      if (userData.rows.length === 0) {
+        res.status(404).json({
+          success: false,
+          message: "User not found!",
+          error: null,
+        });
+        return;
+      }
 
-//       // console.log(userData);
+      const user = userData.rows[0];
 
-//       const user = userData.rows[0];
+      // 4. Check role-based access if roles are specified
+      if (roles.length > 0 && !roles.includes(user.role)) {
+        res.status(403).json({
+          success: false,
+          message: "Forbidden! This role does not have access",
+          error: null,
+        });
+        return;
+      }
 
-//       // console.log(user);
-//       if (userData.rows.length === 0) {
-//         res.status(404).json({
-//           success: false,
-//           message: "User not found!",
-//         });
-//       }
+      // 5. Attach user to request object
+      req.user = decoded;
 
-//       if (!user?.is_active) {
-//         res.status(403).json({
-//           success: false,
-//           message: "Forbidden!!",
-//         });
-//       }
+      next();
+    } catch (error: any) {
+      if (error.name === "TokenExpiredError") {
+        res.status(401).json({
+          success: false,
+          message: "Token has expired!",
+          error: null,
+        });
+        return;
+      }
 
-//       // console.log("Auth Role :", user.role);
+      if (error.name === "JsonWebTokenError") {
+        res.status(401).json({
+          success: false,
+          message: "Invalid token!",
+          error: null,
+        });
+        return;
+      }
 
-//       // roles = ["admin","agent"]
-//       // user.role = "admin" | "user" | "agent"
+      res.status(500).json({
+        success: false,
+        message: error.message,
+        error: error,
+      });
+    }
+  };
+};
 
-//       if (roles.length && !roles.includes(user.role)) {
-//         res.status(403).json({
-//           success: false,
-//           message: "Forbidden!!,This role have no access!",
-//         });
-//       }
-
-//       req.user = decoded; // req : { user : {} }
-
-//       next();
-//     } catch (error) {
-//       next(error);
-//     }
-//   };
-// };
-
-// export default auth;
+export default auth;

@@ -6,7 +6,7 @@ import config from "../../config";
 import type { IUser } from "./auth.interface";
 
 const signupIntoDB = async (payload: IUser) => {
-  const { name, email, password, role  } = payload;
+  const { name, email, password, role } = payload;
 
   const hashPassword = await bcrypt.hash(password, 10);
 
@@ -27,8 +27,6 @@ const loginUserIntoDB = async (payload: {
   password: string;
 }) => {
   const { email, password } = payload;
- 
-
 
   const userData = await pool.query(
     `
@@ -48,20 +46,19 @@ const loginUserIntoDB = async (payload: {
     throw new Error("Invalid Credentials!");
   }
 
-  //3. Generate Token
+  //3. Generate Token - ADDED EMAIL HERE
   const jwtpayload = {
     id: user.id,
     name: user.name,
-    role: user.role
-   
-
+    email: user.email,  // ← THIS LINE WAS MISSING
+    role: user.role,
   };
 
   const accessToken = jwt.sign(jwtpayload, config.secret as string, {
     expiresIn: "1d",
   });
   const data = { token: accessToken, user: user };
-  return data
+  return data;
 };
 
 export const authService = {

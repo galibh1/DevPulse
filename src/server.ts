@@ -2,6 +2,7 @@ import app from "./app";
 import config from "./config";
 import { initDB } from "./db";
 
+
 const port = 8000;
 const main = () => {
   initDB();

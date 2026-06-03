@@ -3,9 +3,8 @@ import express, {
   type Request,
   type Response,
 } from "express";
-// import { profileRoute } from "./modules/profile/profile.route";
-// import { userRoute } from "./modules/user/user.route";
-  import { authRoute } from "./modules/auth/auth.route";
+import { authRoute } from "./modules/auth/auth.route";
+import { issuesRoute } from "./modules/issues/issues.routes";
 
 const app: Application = express();
 
@@ -14,14 +13,14 @@ app.use(express.text());
 app.use(express.urlencoded({ extended: true }));
 
 app.get("/", (req: Request, res: Response) => {
-  //res.send("Hello World!");
   res.status(200).json({
     message: "Devpulse Server",
     author: "Devpulse",
   });
 });
 
-// app.use("/api/users", userRoute);
-// app.use("/api/profile", profileRoute);
+// Routes
 app.use("/api/auth", authRoute);
+app.use("/api/issues", issuesRoute);
+
 export default app;
