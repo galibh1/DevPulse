@@ -5,6 +5,7 @@ import { authService } from "./auth.service";
 const signup = async (req: Request, res: Response) => {
   //   console.log(req.body);
   //   const { name, email, password, age } = req.body;
+  
 
   try {
     const result = await authService.signupIntoDB(req.body);
