@@ -7,7 +7,7 @@ export const pool = new Pool({
 
 export const initDB = async () => {
   try {
-    // Create users table
+    //  users table
     await pool.query(`
       CREATE TABLE IF NOT EXISTS users(
         id SERIAL PRIMARY KEY,

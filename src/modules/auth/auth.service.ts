@@ -38,7 +38,7 @@ const loginUserIntoDB = async (payload: {
     throw new Error("Invalid Credentials!");
   }
 
-  // 2. Compare the password -> Done
+  
   const user = userData.rows[0];
   const matchPassword = await bcrypt.compare(password, user.password);
 
@@ -46,11 +46,11 @@ const loginUserIntoDB = async (payload: {
     throw new Error("Invalid Credentials!");
   }
 
-  //3. Generate Token - ADDED EMAIL HERE
+  
   const jwtpayload = {
     id: user.id,
     name: user.name,
-    email: user.email,  // ← THIS LINE WAS MISSING
+    email: user.email,  
     role: user.role,
   };
 

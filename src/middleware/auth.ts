@@ -14,7 +14,7 @@ declare global {
 const auth = (...roles: string[]) => {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
-      // 1. Check if token exists in Authorization header
+      
       const token = req.headers.authorization;
 
       if (!token) {
@@ -26,13 +26,13 @@ const auth = (...roles: string[]) => {
         return;
       }
 
-      // 2. Verify the token
+      
       const decoded = jwt.verify(
         token as string,
         config.secret as string
       ) as JwtPayload;
 
-      // 3. Find the user in database
+      
       const userData = await pool.query(
         `SELECT * FROM users WHERE email = $1`,
         [decoded.email]
@@ -49,7 +49,7 @@ const auth = (...roles: string[]) => {
 
       const user = userData.rows[0];
 
-      // 4. Check role-based access if roles are specified
+      
       if (roles.length > 0 && !roles.includes(user.role)) {
         res.status(403).json({
           success: false,
@@ -59,7 +59,7 @@ const auth = (...roles: string[]) => {
         return;
       }
 
-      // 5. Attach user to request object
+      
       req.user = decoded;
 
       next();
