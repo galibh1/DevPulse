@@ -61,6 +61,7 @@ const loginUserIntoDB = async (payload: {
   return data;
 };
 
+
 export const authService = {
   loginUserIntoDB,
   signupIntoDB,
