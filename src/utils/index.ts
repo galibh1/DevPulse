@@ -1,7 +1,5 @@
-
 export { sendSuccess, sendError } from "./response";
-export type { ApiResponse } from "./response";
-
+export type { IApiResponse } from "./response";
 // Export validators
 export {
   validateEmail,
@@ -13,7 +11,6 @@ export {
   validateIssueType,
   validateIssueStatus,
 } from "./validators";
-
 // Export error handling
 export {
   AppError,
@@ -21,7 +18,6 @@ export {
   errorHandlingMiddleware,
   handleValidationError,
 } from "./errorHandler";
-
 // Export query builder
 export {
   executeQuery,
@@ -35,7 +31,6 @@ export {
   buildUpdateQuery,
   buildDeleteQuery,
 } from "./queryBuilder";
-
 // Export constants
 export {
   HTTP_STATUS,
@@ -49,13 +44,10 @@ export {
   REGEX_PATTERNS,
   LIMITS,
 } from "./constants";
-
-
 export type {
   IAuthUser,
   IAuthRequest,
   IPaginationQuery,
-  IApiResponse,
   IErrorResponse,
   ISuccessResponse,
   IUser,
@@ -73,12 +65,8 @@ export type {
   IPaginationMeta,
   IListResponse,
 } from "./types";
-
-
 export { Logger, LogLevel } from "./logger";
 export { default as logger } from "./logger";
-
-
 export {
   cleanString,
   capitalize,

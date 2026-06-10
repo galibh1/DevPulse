@@ -16,13 +16,11 @@ import {
   type IAuthRequest,
 } from "../../utils";
 
-
 export const createIssue = asyncHandler(
   async (req: IAuthRequest, res: Response) => {
     const { title, description, type } = req.body;
     const userId = req.user?.id;
 
-    
     const titleError = validateIssueTitle(title);
     if (titleError) {
       return sendError(res, HTTP_STATUS.BAD_REQUEST, titleError);
@@ -41,7 +39,6 @@ export const createIssue = asyncHandler(
       );
     }
 
-    
     const result = await issuesService.createIssue(
       { title, description, type },
       userId!
@@ -57,25 +54,21 @@ export const createIssue = asyncHandler(
   }
 );
 
-
 export const getAllIssues = asyncHandler(
   async (req: IAuthRequest, res: Response) => {
     const { page = 1, limit = 10, sort = "newest", type, status } = req.query;
 
-    
     const { offset, limit: validLimit } = calculatePagination(
       parseInt(page as string),
       parseInt(limit as string)
     );
 
-    
     const issues = await issuesService.getAllIssues(
       (sort as "newest" | "oldest") || "newest",
       type as string,
       status as string
     );
 
-    
     const paginatedIssues = issues.slice(offset, offset + validLimit);
 
     Logger.info("Retrieved all issues");
@@ -88,14 +81,11 @@ export const getAllIssues = asyncHandler(
   }
 );
 
-
 export const getSingleIssue = asyncHandler(
   async (req: IAuthRequest, res: Response) => {
-    const { id } = req.params;
+    const id = req.params.id as string;
 
-    
     const issue = await issuesService.getIssueById(parseInt(id));
-
     if (!issue) {
       return sendError(
         res,
@@ -113,15 +103,13 @@ export const getSingleIssue = asyncHandler(
   }
 );
 
-
 export const updateIssue = asyncHandler(
   async (req: IAuthRequest, res: Response) => {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const { title, description, type, status } = req.body;
     const userId = req.user?.id;
     const userRole = req.user?.role;
 
-    // Validation
     if (title) {
       const titleError = validateIssueTitle(title);
       if (titleError) {
@@ -152,7 +140,6 @@ export const updateIssue = asyncHandler(
       );
     }
 
-    // Check ownership - use correct method name
     const issue = await issuesService.getIssueByIdForOwnerCheck(parseInt(id));
     if (!issue) {
       return sendError(
@@ -170,7 +157,6 @@ export const updateIssue = asyncHandler(
       );
     }
 
-    // Call service - use correct method name
     const result = await issuesService.updateIssue(parseInt(id), {
       title,
       description,
@@ -188,14 +174,12 @@ export const updateIssue = asyncHandler(
   }
 );
 
-
 export const deleteIssue = asyncHandler(
   async (req: IAuthRequest, res: Response) => {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const userId = req.user?.id;
     const userRole = req.user?.role;
 
-    
     const issue = await issuesService.getIssueByIdForOwnerCheck(parseInt(id));
     if (!issue) {
       return sendError(
@@ -205,7 +189,6 @@ export const deleteIssue = asyncHandler(
       );
     }
 
-    
     if (issue.reporter_id !== userId && userRole !== "maintainer") {
       return sendError(
         res,
@@ -214,18 +197,11 @@ export const deleteIssue = asyncHandler(
       );
     }
 
-    
     await issuesService.deleteIssue(parseInt(id));
-
     Logger.logIssue("deleted", parseInt(id), userId!);
-    return sendSuccess(
-      res,
-      HTTP_STATUS.OK,
-      SUCCESS_MESSAGES.ISSUE_DELETED
-    );
+    return sendSuccess(res, HTTP_STATUS.OK, SUCCESS_MESSAGES.ISSUE_DELETED);
   }
 );
-
 
 export const issuesController = {
   createIssue,

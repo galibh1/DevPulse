@@ -122,7 +122,8 @@ export interface IIssueFilter {
   reporter_id?: number;
 }
 
-export interface IIssueQuery extends IPaginationQuery, IIssueFilter {
+// Omit `sort` from IPaginationQuery to avoid type conflict
+export interface IIssueQuery extends Omit<IPaginationQuery, "sort">, IIssueFilter {
   sort?: "newest" | "oldest";
 }
 
