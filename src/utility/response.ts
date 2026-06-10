@@ -1,37 +1,42 @@
 import type { Response } from "express";
 
-export interface ApiResponse<T> {
+export interface IApiResponse<T = any> {
   success: boolean;
   message: string;
-  data?: T;
-  error?: any;
+  data: T | null;
+  errors?: any;
 }
 
+/**
+ * Send success response
+ */
 export const sendSuccess = <T>(
   res: Response,
   statusCode: number,
   message: string,
   data?: T
 ): Response => {
-  const response: ApiResponse<T> = {
+  return res.status(statusCode).json({
     success: true,
     message,
-    data,
-  };
-  return res.status(statusCode).json(response);
+    data: data || null,
+    errors: null,
+  } as IApiResponse<T>);
 };
 
+/**
+ * Send error response
+ */
 export const sendError = (
   res: Response,
   statusCode: number,
   message: string,
-  error?: any
+  errors?: any
 ): Response => {
-  const response: ApiResponse<null> = {
+  return res.status(statusCode).json({
     success: false,
     message,
     data: null,
-    error: error || message,
-  };
-  return res.status(statusCode).json(response);
+    errors: errors || null,
+  } as IApiResponse);
 };
