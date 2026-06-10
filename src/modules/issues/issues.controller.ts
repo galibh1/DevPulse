@@ -1,281 +1,236 @@
-import type { Request, Response } from "express";
+import type { Response } from "express";
 import { issuesService } from "./issues.service";
-import type { IIssue } from "./issues.interface";
+import {
+  sendSuccess,
+  sendError,
+  validateIssueTitle,
+  validateIssueDescription,
+  validateIssueType,
+  validateIssueStatus,
+  asyncHandler,
+  calculatePagination,
+  HTTP_STATUS,
+  SUCCESS_MESSAGES,
+  ERROR_MESSAGES,
+  Logger,
+  type IAuthRequest,
+} from "../../utility";
 
-const createIssue = async (req: Request, res: Response) => {
-  try {
+// Create issue
+export const createIssue = asyncHandler(
+  async (req: IAuthRequest, res: Response) => {
     const { title, description, type } = req.body;
     const userId = req.user?.id;
 
     // Validation
-    if (!title || !description || !type) {
-      res.status(400).json({
-        success: false,
-        message: "Title, description, and type are required",
-        error: null,
-      });
-      return;
+    const titleError = validateIssueTitle(title);
+    if (titleError) {
+      return sendError(res, HTTP_STATUS.BAD_REQUEST, titleError);
     }
 
-    if (title.length > 150) {
-      res.status(400).json({
-        success: false,
-        message: "Title must not exceed 150 characters",
-        error: null,
-      });
-      return;
+    const descError = validateIssueDescription(description);
+    if (descError) {
+      return sendError(res, HTTP_STATUS.BAD_REQUEST, descError);
     }
 
-    if (description.length < 20) {
-      res.status(400).json({
-        success: false,
-        message: "Description must be at least 20 characters long",
-        error: null,
-      });
-      return;
+    if (!validateIssueType(type)) {
+      return sendError(
+        res,
+        HTTP_STATUS.BAD_REQUEST,
+        ERROR_MESSAGES.INVALID_ISSUE_TYPE
+      );
     }
 
-    if (!['bug', 'feature_request'].includes(type)) {
-      res.status(400).json({
-        success: false,
-        message: 'Type must be either "bug" or "feature_request"',
-        error: null,
-      });
-      return;
-    }
-
-    const issue = await issuesService.createIssue(
+    // Call service - use correct method name
+    const result = await issuesService.createIssue(
       { title, description, type },
-      userId
+      userId!
     );
 
-    res.status(201).json({
-      success: true,
-      message: "Issue created successfully",
-      data: issue,
-    });
-  } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-      error: error,
-    });
+    Logger.logIssue("created", result.id, userId!);
+    return sendSuccess(
+      res,
+      HTTP_STATUS.CREATED,
+      SUCCESS_MESSAGES.ISSUE_CREATED,
+      result
+    );
   }
-};
+);
 
-const getAllIssues = async (req: Request, res: Response) => {
-  try {
-    const sort = (req.query.sort as 'newest' | 'oldest') || 'newest';
-    const type = req.query.type as string | undefined;
-    const status = req.query.status as string | undefined;
+// Get all issues
+export const getAllIssues = asyncHandler(
+  async (req: IAuthRequest, res: Response) => {
+    const { page = 1, limit = 10, sort = "newest", type, status } = req.query;
 
-    // Validate query params
-    if (sort && !['newest', 'oldest'].includes(sort)) {
-      res.status(400).json({
-        success: false,
-        message: 'Sort must be "newest" or "oldest"',
-        error: null,
-      });
-      return;
-    }
+    // Pagination
+    const { offset, limit: validLimit } = calculatePagination(
+      parseInt(page as string),
+      parseInt(limit as string)
+    );
 
-    if (type && !['bug', 'feature_request'].includes(type)) {
-      res.status(400).json({
-        success: false,
-        message: 'Type must be "bug" or "feature_request"',
-        error: null,
-      });
-      return;
-    }
+    // Call service - use correct method name
+    const issues = await issuesService.getAllIssues(
+      (sort as "newest" | "oldest") || "newest",
+      type as string,
+      status as string
+    );
 
-    if (status && !['open', 'in_progress', 'resolved'].includes(status)) {
-      res.status(400).json({
-        success: false,
-        message: 'Status must be "open", "in_progress", or "resolved"',
-        error: null,
-      });
-      return;
-    }
+    // Manual pagination on results
+    const paginatedIssues = issues.slice(offset, offset + validLimit);
 
-    const issues = await issuesService.getAllIssues(sort, type, status);
-
-    res.status(200).json({
-      success: true,
-      message: "Issues retrieved successfully",
-      data: issues,
-    });
-  } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-      error: error,
-    });
+    Logger.info("Retrieved all issues");
+    return sendSuccess(
+      res,
+      HTTP_STATUS.OK,
+      SUCCESS_MESSAGES.ISSUES_RETRIEVED,
+      paginatedIssues
+    );
   }
-};
+);
 
-const getIssueById = async (req: Request, res: Response) => {
-  try {
+// Get single issue
+export const getSingleIssue = asyncHandler(
+  async (req: IAuthRequest, res: Response) => {
     const { id } = req.params;
 
+    // Call service - use correct method name
     const issue = await issuesService.getIssueById(parseInt(id));
 
     if (!issue) {
-      res.status(404).json({
-        success: false,
-        message: "Issue not found",
-        error: null,
-      });
-      return;
+      return sendError(
+        res,
+        HTTP_STATUS.NOT_FOUND,
+        ERROR_MESSAGES.ISSUE_NOT_FOUND
+      );
     }
 
-    res.status(200).json({
-      success: true,
-      message: "Issue retrieved successfully",
-      data: issue,
-    });
-  } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-      error: error,
-    });
+    return sendSuccess(
+      res,
+      HTTP_STATUS.OK,
+      SUCCESS_MESSAGES.ISSUE_RETRIEVED,
+      issue
+    );
   }
-};
+);
 
-const updateIssue = async (req: Request, res: Response) => {
-  try {
+// Update issue
+export const updateIssue = asyncHandler(
+  async (req: IAuthRequest, res: Response) => {
     const { id } = req.params;
     const { title, description, type, status } = req.body;
     const userId = req.user?.id;
     const userRole = req.user?.role;
 
-    // Fetch the issue first
+    // Validation
+    if (title) {
+      const titleError = validateIssueTitle(title);
+      if (titleError) {
+        return sendError(res, HTTP_STATUS.BAD_REQUEST, titleError);
+      }
+    }
+
+    if (description) {
+      const descError = validateIssueDescription(description);
+      if (descError) {
+        return sendError(res, HTTP_STATUS.BAD_REQUEST, descError);
+      }
+    }
+
+    if (type && !validateIssueType(type)) {
+      return sendError(
+        res,
+        HTTP_STATUS.BAD_REQUEST,
+        ERROR_MESSAGES.INVALID_ISSUE_TYPE
+      );
+    }
+
+    if (status && !validateIssueStatus(status)) {
+      return sendError(
+        res,
+        HTTP_STATUS.BAD_REQUEST,
+        ERROR_MESSAGES.INVALID_ISSUE_STATUS
+      );
+    }
+
+    // Check ownership - use correct method name
     const issue = await issuesService.getIssueByIdForOwnerCheck(parseInt(id));
-
     if (!issue) {
-      res.status(404).json({
-        success: false,
-        message: "Issue not found",
-        error: null,
-      });
-      return;
+      return sendError(
+        res,
+        HTTP_STATUS.NOT_FOUND,
+        ERROR_MESSAGES.ISSUE_NOT_FOUND
+      );
     }
 
-    // Authorization: contributor can only update own issue if it's open
-    if (userRole === 'contributor') {
-      if (issue.reporter_id !== userId) {
-        res.status(403).json({
-          success: false,
-          message: "You can only update your own issues",
-          error: null,
-        });
-        return;
-      }
-
-      if (issue.status !== 'open') {
-        res.status(409).json({
-          success: false,
-          message: 'Contributors can only update issues with "open" status',
-          error: null,
-        });
-        return;
-      }
+    if (issue.reporter_id !== userId && userRole !== "maintainer") {
+      return sendError(
+        res,
+        HTTP_STATUS.FORBIDDEN,
+        ERROR_MESSAGES.CANNOT_UPDATE_ISSUE
+      );
     }
 
-    // Validate fields being updated
-    if (title !== undefined && title.length > 150) {
-      res.status(400).json({
-        success: false,
-        message: "Title must not exceed 150 characters",
-        error: null,
-      });
-      return;
-    }
-
-    if (description !== undefined && description.length < 20) {
-      res.status(400).json({
-        success: false,
-        message: "Description must be at least 20 characters long",
-        error: null,
-      });
-      return;
-    }
-
-    if (type !== undefined && !['bug', 'feature_request'].includes(type)) {
-      res.status(400).json({
-        success: false,
-        message: 'Type must be "bug" or "feature_request"',
-        error: null,
-      });
-      return;
-    }
-
-    if (status !== undefined && !['open', 'in_progress', 'resolved'].includes(status)) {
-      res.status(400).json({
-        success: false,
-        message: 'Status must be "open", "in_progress", or "resolved"',
-        error: null,
-      });
-      return;
-    }
-
-    const updatedIssue = await issuesService.updateIssue(parseInt(id), {
+    // Call service - use correct method name
+    const result = await issuesService.updateIssue(parseInt(id), {
       title,
       description,
       type,
       status,
     });
 
-    res.status(200).json({
-      success: true,
-      message: "Issue updated successfully",
-      data: updatedIssue,
-    });
-  } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-      error: error,
-    });
+    Logger.logIssue("updated", parseInt(id), userId!);
+    return sendSuccess(
+      res,
+      HTTP_STATUS.OK,
+      SUCCESS_MESSAGES.ISSUE_UPDATED,
+      result
+    );
   }
-};
+);
 
-const deleteIssue = async (req: Request, res: Response) => {
-  try {
+// Delete issue
+export const deleteIssue = asyncHandler(
+  async (req: IAuthRequest, res: Response) => {
     const { id } = req.params;
+    const userId = req.user?.id;
+    const userRole = req.user?.role;
 
-    // Fetch the issue first to check if it exists
+    // Check if issue exists - use correct method name
     const issue = await issuesService.getIssueByIdForOwnerCheck(parseInt(id));
-
     if (!issue) {
-      res.status(404).json({
-        success: false,
-        message: "Issue not found",
-        error: null,
-      });
-      return;
+      return sendError(
+        res,
+        HTTP_STATUS.NOT_FOUND,
+        ERROR_MESSAGES.ISSUE_NOT_FOUND
+      );
     }
 
+    // Check ownership - only reporter or maintainer can delete
+    if (issue.reporter_id !== userId && userRole !== "maintainer") {
+      return sendError(
+        res,
+        HTTP_STATUS.FORBIDDEN,
+        ERROR_MESSAGES.CANNOT_DELETE_ISSUE
+      );
+    }
+
+    // Call service - use correct method name
     await issuesService.deleteIssue(parseInt(id));
 
-    res.status(200).json({
-      success: true,
-      message: "Issue deleted successfully",
-      data: null,
-    });
-  } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-      error: error,
-    });
+    Logger.logIssue("deleted", parseInt(id), userId!);
+    return sendSuccess(
+      res,
+      HTTP_STATUS.OK,
+      SUCCESS_MESSAGES.ISSUE_DELETED
+    );
   }
-};
+);
 
+// Export controller object for compatibility
 export const issuesController = {
   createIssue,
   getAllIssues,
-  getIssueById,
+  getSingleIssue,
   updateIssue,
   deleteIssue,
 };

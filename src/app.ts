@@ -5,6 +5,7 @@ import express, {
 } from "express";
 import { authRoute } from "./modules/auth/auth.route";
 import { issuesRoute } from "./modules/issues/issues.routes";
+import { errorHandlingMiddleware } from "./utility";
 
 const app: Application = express();
 
@@ -22,5 +23,8 @@ app.get("/", (req: Request, res: Response) => {
 // Routes
 app.use("/api/auth", authRoute);
 app.use("/api/issues", issuesRoute);
+
+// Error handling middleware (must be last)
+app.use(errorHandlingMiddleware);
 
 export default app;
