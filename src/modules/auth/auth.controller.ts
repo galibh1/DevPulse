@@ -11,13 +11,13 @@ import {
   SUCCESS_MESSAGES,
   ERROR_MESSAGES,
   Logger,
-} from "../../utility";
+} from "../../utils";
 
-// Signup controller
+
 export const signup = asyncHandler(async (req: Request, res: Response) => {
   const { name, email, password, role } = req.body;
 
-  // Validation
+  
   const nameError = validateName(name);
   if (nameError) {
     return sendError(res, HTTP_STATUS.BAD_REQUEST, nameError);
@@ -36,7 +36,7 @@ export const signup = asyncHandler(async (req: Request, res: Response) => {
     return sendError(res, HTTP_STATUS.BAD_REQUEST, passwordError);
   }
 
-  // Call service
+  
   const result = await authService.signupIntoDB({
     name,
     email,
@@ -44,7 +44,7 @@ export const signup = asyncHandler(async (req: Request, res: Response) => {
     role: role || "contributor",
   });
 
-  // Remove password from response
+  
   const user = result.rows[0];
   delete user.password;
 
@@ -57,11 +57,11 @@ export const signup = asyncHandler(async (req: Request, res: Response) => {
   );
 });
 
-// Login controller
+
 export const login = asyncHandler(async (req: Request, res: Response) => {
   const { email, password } = req.body;
 
-  // Validation
+ 
   if (!validateEmail(email)) {
     return sendError(
       res,
@@ -78,7 +78,7 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
     );
   }
 
-  // Call service
+  
   const result = await authService.loginUserIntoDB({ email, password });
 
   Logger.logAuth("login", result.user.id, email);
@@ -90,7 +90,7 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
   );
 });
 
-// Export controller object for compatibility
+
 export const authController = {
   signup,
   login,

@@ -1,4 +1,4 @@
-// Export response utilities
+
 export { sendSuccess, sendError } from "./response";
 export type { ApiResponse } from "./response";
 
@@ -50,7 +50,7 @@ export {
   LIMITS,
 } from "./constants";
 
-// Export types
+
 export type {
   IAuthUser,
   IAuthRequest,
@@ -74,11 +74,11 @@ export type {
   IListResponse,
 } from "./types";
 
-// Export logger
+
 export { Logger, LogLevel } from "./logger";
 export { default as logger } from "./logger";
 
-// Export string helpers
+
 export {
   cleanString,
   capitalize,

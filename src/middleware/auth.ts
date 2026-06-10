@@ -7,7 +7,7 @@ import {
   ERROR_MESSAGES,
   type IAuthRequest,
   type IAuthUser,
-} from "../utility";
+} from "../utils";
 
 export const auth = (req: IAuthRequest, res: Response, next: NextFunction) => {
   try {
