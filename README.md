@@ -1,176 +1,132 @@
-# DevPulse 🚀
+# DevPulse
 
-DevPulse is a lightweight and scalable issue tracking and project management backend system built for developers to manage projects, tasks, and bugs efficiently using clean REST APIs and secure authentication.
+A minimal issue-tracking API built with Node.js, TypeScript, Express and PostgreSQL.
 
----
-
-## 🌐 Live URL
-
-- Repository: https://github.com/galibh1/DevPulse  
-- Live Demo: *(Add deployed URL here if available)*
+Live URL: https://devpulse-project-seven.vercel.app/
 
 ---
 
-## ✨ Features
+## Features
 
-- User registration and login system
-- JWT-based authentication and authorization
-- Create, update, delete issues
-- Assign issues to users
-- Track issue status (Open, In Progress, Closed)
-- Priority levels (Low, Medium, High)
-- Project-based issue management
-- Centralized error handling middleware
-- RESTful API design
-- PostgreSQL database integration
-- Scalable and modular backend architecture
+- User signup & login with JWT authentication
+- Role-based access control (`contributor`, `maintainer`)
+- Create, read, update, and delete issues
+- PostgreSQL persistence with simple SQL schema
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
-- Node.js
-- Express.js
-- TypeScript
-- PostgreSQL
-- JWT (Authentication)
-- Prisma / TypeORM (depending on implementation)
-- dotenv
+- Node.js + TypeScript
+- Express
+- PostgreSQL (`pg`)
+- Authentication: `jsonwebtoken`, `bcryptjs`
+- Dev tooling: `tsx`, `typescript`, `dotenv`
 
 ---
 
-## ⚙️ Setup Instructions
+## Quick Setup
 
-### 1. Clone the repository
+1. Clone the repository
 
-```bash
-git clone https://github.com/galibh1/DevPulse.git
-cd DevPulse
-```
+   ```bash
+   git clone https://github.com/galibh1/DevPulse.git
+   cd DevPulse
+   ```
 
-### 2. Install dependencies
+2. Install dependencies
 
-```bash
-npm install
-```
+   ```bash
+   npm install
+   ```
 
-### 3. Setup environment variables
+3. Create a `.env` file at the project root with the following variables:
 
-Create a `.env` file in the root directory and add:
+   ```env
+   CONNECTIONSTRING=postgresql://user:pass@host:port/dbname
+   JWT_SECRET=your_jwt_secret
+   ```
 
-```env
-PORT=8000
-DATABASE_URL=your_postgres_connection_url
-JWT_SECRET=your_secret_key
-```
+4. Start the server in development
 
----
+   ```bash
+   npm run dev
+   ```
 
-
-
----
-
-### 4. Start the development server
-
-```bash
-npm run dev
-```
-
-Server will run at:
-
-```
-http://localhost:8000
-```
+The server listens on port `8000` by default.
 
 ---
 
-## 📡 API Endpoints
+## API Endpoints
 
-### 🔐 Auth Routes
+Base path: `http://localhost:8000`
 
-| Method | Endpoint       | Description   |
-| ------ | -------------- | ------------- |
-| POST   | /auth/register | Register user |
-| POST   | /auth/login    | Login user    |
+### Authentication
 
----
+- **POST** `/api/auth/signup`
+  - Description: Create a new user
+  - Body (JSON): `{ "name": string, "email": string, "password": string, "role"?: "contributor" | "maintainer" }`
+  - Response: Created user metadata (password is not returned)
 
-### 👤 User Routes
+- **POST** `/api/auth/login`
+  - Description: Authenticate and receive a JWT
+  - Body (JSON): `{ "email": string, "password": string }`
+  - Response: `{ "token": "<JWT>" }`
 
-| Method | Endpoint  | Description      |
-| ------ | --------- | ---------------- |
-| GET    | /users/me | Get current user |
+### Issues
 
----
+- **POST** `/api/issues/`
+  - Description: Create an issue
+  - Auth: required (`Authorization` header must contain JWT)
+  - Roles allowed: `contributor`, `maintainer`
+  - Body (JSON): `{ "title": string, "description": string, "type": "bug" | "feature_request" }`
 
-### 📁 Project Routes
+- **GET** `/api/issues/`
+  - Description: List all issues
+  - Auth: none
 
-| Method | Endpoint      | Description       |
-| ------ | ------------- | ----------------- |
-| GET    | /projects     | Get all projects  |
-| POST   | /projects     | Create project    |
-| GET    | /projects/:id | Get project by ID |
-| PUT    | /projects/:id | Update project    |
-| DELETE | /projects/:id | Delete project    |
+- **GET** `/api/issues/:id`
+  - Description: Get a single issue by id
+  - Auth: none
 
----
+- **PATCH** `/api/issues/:id`
+  - Description: Update an issue
+  - Auth: required
+  - Roles allowed: `contributor`, `maintainer`
+  - Body: Partial `title`, `description`, `type`, or `status`
 
-### 📌 Issue Routes
+- **DELETE** `/api/issues/:id`
+  - Description: Delete an issue
+  - Auth: required
+  - Roles allowed: `maintainer`
 
-| Method | Endpoint    | Description     |
-| ------ | ----------- | --------------- |
-| GET    | /issues     | Get all issues  |
-| POST   | /issues     | Create issue    |
-| GET    | /issues/:id | Get issue by ID |
-| PUT    | /issues/:id | Update issue    |
-| DELETE | /issues/:id | Delete issue    |
-
----
-
-## 🗄️ Database Schema Summary
-
-### User
-- id (UUID)
-- name
-- email (unique)
-- password (hashed)
-- createdAt
-- updatedAt
-
-### Project
-- id
-- title
-- description
-- userId (owner)
-- createdAt
-- updatedAt
-
-### Issue
-- id
-- title
-- description
-- status (OPEN | IN_PROGRESS | CLOSED)
-- priority (LOW | MEDIUM | HIGH)
-- projectId
-- assignedTo
-- createdAt
-- updatedAt
+> Provide the JWT in the `Authorization` header (the server expects the raw token string).
 
 ---
 
-## 🚀 Future Improvements
+## Database Schema
 
-- Frontend dashboard using React / Next.js
-- Role-based access control (Admin / Developer / Viewer)
-- Issue comments system
-- File attachments
-- Real-time updates with WebSockets
-- Advanced filtering and search
+This project uses PostgreSQL. The database is initialized by `src/db/index.ts` and contains two primary tables:
+
+**`users`**
+- `id` SERIAL PRIMARY KEY
+- `name` VARCHAR(20)
+- `email` VARCHAR(30) UNIQUE NOT NULL
+- `password` TEXT NOT NULL
+- `role` VARCHAR(20) NOT NULL DEFAULT `'contributor'` (CHECK: `contributor` | `maintainer`)
+- `created_at`, `updated_at` TIMESTAMP
+
+**`issues`**
+- `id` SERIAL PRIMARY KEY
+- `title` VARCHAR(150) NOT NULL
+- `description` TEXT NOT NULL
+- `type` VARCHAR(20) NOT NULL (CHECK: `bug` | `feature_request`)
+- `status` VARCHAR(20) NOT NULL DEFAULT `'open'` (CHECK: `open` | `in_progress` | `resolved`)
+- `reporter_id` INT NOT NULL (references `users.id`)
+- `created_at`, `updated_at` TIMESTAMP
 
 ---
 
-## 👨‍💻 Author
+## Author
 
-**Galib Hasan**
-
-- GitHub: https://github.com/galibh1
+**Galib Hasan** — [github.com/galibh1](https://github.com/galibh1)
